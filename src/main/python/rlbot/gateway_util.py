@@ -1,5 +1,6 @@
 import os
 import platform
+import re
 import shlex
 import socket
 import stat
@@ -38,6 +39,54 @@ class NetworkingRole(IntEnum):
 class LaunchOptions:
     networking_role: NetworkingRole = NetworkingRole.none
     remote_address: str = '127.0.0.1'
+
+
+class ACFFile(dict):
+    """
+    This class represents the .acf file format used by Steam.
+
+    @param path: Path to the .acf file to parse
+    """
+    _OBJECT_NAME_RE = re.compile(r'^\t*"(.+)"$', re.MULTILINE)
+    _OBJECT_BEGIN_RE = re.compile(r'^\t*{$', re.MULTILINE)
+    _OBJECT_FINISH_RE = re.compile(r'^\t*}$', re.MULTILINE)
+    _KEY_VALUE_RE = re.compile(r'^\t*"(.+)"\t+"(.*)"$', re.MULTILINE)
+
+    def __init__(self, path):
+        super().__init__()
+        with open(path, 'r') as fp:
+            self.parse(fp)
+
+    def parse(self, fp):
+        """
+        Parse an .acf file
+
+        @param fp: an iterable over lines in the acf file
+        """
+        self.update(self._parse(fp))
+
+    def _parse(self, fp):
+        retval = dict()
+        for line in fp:
+            match = self._OBJECT_BEGIN_RE.match(line)
+            if match is not None:
+                continue
+
+            match = self._KEY_VALUE_RE.match(line)
+            if match is not None:
+                key, value = match.group(1, 2)
+                retval[key] = value
+            else:
+                match = self._OBJECT_NAME_RE.match(line)
+                if match is not None:
+                    key = match.group(1)
+                    retval[key] = self._parse(fp)
+
+            match = self._OBJECT_FINISH_RE.match(line)
+            if match is not None:
+                break
+
+        return retval
 
 
 def launch(launch_options: LaunchOptions = None):
