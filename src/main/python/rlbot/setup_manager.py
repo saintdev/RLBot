@@ -259,19 +259,6 @@ class SetupManager:
                          'https://gfycat.com/AngryQuickFinnishspitz')
         args_string = '%20'.join(ideal_args)
 
-        # Try launch via terminal (Linux)
-        if platform.system() == 'Linux':
-            linux_args = [
-                'steam',
-                f'steam://rungameid/{ROCKET_LEAGUE_PROCESS_INFO.GAMEID}//{args_string}'
-            ]
-
-            try:
-                _ = subprocess.Popen(linux_args)
-                return
-            except OSError:
-                self.logger.warning('Could not launch Steam executable on Linux.')
-
         try:
             self.logger.info("Launching rocket league via steam browser URL as a last resort...")
             webbrowser.open(f'steam://rungameid/{ROCKET_LEAGUE_PROCESS_INFO.GAMEID}//{args_string}')
@@ -759,18 +746,23 @@ def try_get_steam_executable_path() -> Optional[Path]:
     Has platform specific code.
     """
 
-    try:
-        from winreg import OpenKey, HKEY_CURRENT_USER, ConnectRegistry, QueryValueEx, REG_SZ
-    except ImportError as e:
-        return  # TODO: Linux support.
+    if platform.system() == 'Windows':
+        try:
+            from winreg import OpenKey, HKEY_CURRENT_USER, ConnectRegistry, QueryValueEx, REG_SZ
+        except ImportError as e:
+            return
 
-    try:
-        key = OpenKey(ConnectRegistry(None, HKEY_CURRENT_USER), r'Software\Valve\Steam')
-        val, val_type = QueryValueEx(key, 'SteamExe')
-    except FileNotFoundError:
-        return
-    if val_type != REG_SZ:
-        return
+        try:
+            key = OpenKey(ConnectRegistry(None, HKEY_CURRENT_USER), r'Software\Valve\Steam')
+            val, val_type = QueryValueEx(key, 'SteamExe')
+        except FileNotFoundError:
+            return
+        if val_type != REG_SZ:
+            return
+    else:
+        import shutil
+        val = shutil.which('steam')
+
     return Path(val)
 
 
