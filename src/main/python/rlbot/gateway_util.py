@@ -1,5 +1,6 @@
 import os
 import platform
+import shlex
 import socket
 import stat
 import subprocess
@@ -63,8 +64,11 @@ def launch(launch_options: LaunchOptions = None):
         args.append(str(int(launch_options.networking_role)))
     print(f"Launching RLBot binary with args {args}")
     if platform.system() != 'Windows':
-        # Unix only works this way, not sure why. Windows works better with the array, guards against spaces in path.
+        # Get a shell-escaped version of args to protect against command injection. Python 3.8+ provides `shlex.join()`
+        # that combines `quote` and `join` into one function.
+        args = [shlex.quote(c) for c in args]
         args = ' '.join(args)
+
     return subprocess.Popen(args, shell=True, cwd=get_dll_directory()), port
 
 
