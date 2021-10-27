@@ -150,9 +150,7 @@ def main():
     from rlbot.gateway_util import IDEAL_RLBOT_PORT
 
     ph = ProtonHack()
-    cmd = ph.prefix_proton_cmd([os.path.join(get_dll_directory(), 'RLBot.exe'), str(IDEAL_RLBOT_PORT)])
-    cmd = [shlex.quote(x) for x in cmd]
-    print(str(cmd))
+    ph.run_in_proton_prefix([os.path.join(get_dll_directory(), 'RLBot.exe'), str(IDEAL_RLBOT_PORT)])
 
 
 if __name__ == '__main__':
